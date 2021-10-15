@@ -1,14 +1,14 @@
-'''
+"""
 [+] пользак выбирает категорию из предложенных и вписывает руками сумму, дату, описание
 [+] бот вписывает расход в нужное место пока хватит
-'''
+"""
 
 import telebot
 from telebot import types
 import datetime
 import csv
 
-bot = telebot.TeleBot("2041146411:AAGW4K_Dnii5xb6Q9tnxSexk_9kFc_LofPQ")
+bot = telebot.TeleBot("")
 status_message = 0
 
 
