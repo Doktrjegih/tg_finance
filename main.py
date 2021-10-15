@@ -7,8 +7,9 @@ import telebot
 from telebot import types
 import datetime
 import csv
+import mytoken
 
-bot = telebot.TeleBot("")
+bot = telebot.TeleBot(f"{mytoken.token}")
 status_message = 0
 
 
