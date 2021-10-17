@@ -1,6 +1,7 @@
 """
 [+] пользак выбирает категорию из предложенных и вписывает руками сумму, дату, описание
 [+] бот вписывает расход в нужное место пока хватит
+[-] последние 10 ваших расходов, сумма всех внесенных расходов
 """
 
 import telebot
@@ -27,6 +28,15 @@ def main_menu(message):
 	keyboard_3 = types.InlineKeyboardButton(text='пиво', callback_data='beer')
 	keyboard.add(keyboard_3)
 	bot.send_message(message.from_user.id, text='Выбери категорию', reply_markup=keyboard)
+
+
+@bot.message_handler(commands=['sum'])
+def summ_all(message):
+	with open("finances.csv", mode="r", encoding='utf-8') as r_file:
+		file_reader = csv.reader(w_file, lineterminator="\r")
+		for row in file_reader:
+...         print(row[1])
+	bot.send_message(message.from_user.id, text='Сумма всех расходов =')
 
 
 @bot.callback_query_handler(func=lambda call: True)
