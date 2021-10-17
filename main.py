@@ -32,11 +32,31 @@ def main_menu(message):
 
 @bot.message_handler(commands=['sum'])
 def summ_all(message):
+	summ = 0
 	with open("finances.csv", mode="r", encoding='utf-8') as r_file:
-		file_reader = csv.reader(w_file, lineterminator="\r")
+		file_reader = csv.reader(r_file, lineterminator="\r")
 		for row in file_reader:
-...         print(row[1])
-	bot.send_message(message.from_user.id, text='Сумма всех расходов =')
+			summ += int(row[1])
+	bot.send_message(message.from_user.id, text=f'Сумма всех расходов = {summ}')
+
+
+@bot.message_handler(commands=['last'])
+def last(message):
+	last = ''
+	i = 0
+	with open("finances.csv", mode="r", encoding='utf-8') as r_file:
+		file_reader = csv.reader(r_file, lineterminator="\r")
+		for row in file_reader:
+			i += 1
+
+	with open("finances.csv", mode="r", encoding='utf-8') as r_file:
+		file_reader = csv.reader(r_file, lineterminator="\r")
+		j = 0
+		for row in file_reader:
+			j += 1
+			if j >= i - 1:
+				last += str(row)
+	bot.send_message(message.from_user.id, text=f'{last}')
 
 
 @bot.callback_query_handler(func=lambda call: True)
