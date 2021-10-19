@@ -21,8 +21,8 @@ markup = types.ReplyKeyboardMarkup(row_width=1)
 def main_menu(message):
 	markup = types.ReplyKeyboardMarkup(row_width=1)
 	itembtn1 = types.KeyboardButton('Добавить расход')
-	itembtn2 = types.KeyboardButton('/sum')
-	itembtn3 = types.KeyboardButton(text='/last')
+	itembtn2 = types.KeyboardButton('Сумма всех расходов')
+	itembtn3 = types.KeyboardButton('Последние 5 записей')
 	markup.add(itembtn1, itembtn2, itembtn3)
 	bot.send_message(message.from_user.id, "Выберите действие:", reply_markup=markup)
 
@@ -45,8 +45,12 @@ def add_entry(message):
 		keyboard_3 = types.InlineKeyboardButton(text='пиво', callback_data='beer')
 		keyboard.add(keyboard_3)
 		bot.send_message(message.from_user.id, text='Выберите категорию:', reply_markup=keyboard)
+	elif message.text == 'Сумма всех расходов':
+		summ_all(message)
+	elif message.text == 'Последние 5 записей':
+		last(message)
 	else:
-		print('пошел нахуй')
+		print('неизвестная команда')
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -55,9 +59,8 @@ def callback_worker(call):
 	test1 = call.data.split('+')[0]
 	test2 = call.data.split('+')[1]
 	if command == "test1":
-		print(test2)
-		bot.delete_message(chat_id=test1, message_id=int(test2) + 0)  # TODO: перестало работать удаление нужного сообщения
-		bot.delete_message(chat_id=test1, message_id=int(test2) + 1)
+		bot.delete_message(chat_id=test1, message_id=int(test2) + 2)
+		# bot.delete_message(chat_id=test1, message_id=int(test2) + 1)
 		cat = 'продукты'
 		# markup1 = types.ReplyKeyboardRemove(selective=False)
 		# bot.send_message(call.message.chat.id, 'кнопки удалены', reply_markup=markup1)
@@ -115,6 +118,7 @@ def _date(message, new_entry):
 		new_entry.append(convert_date)
 		# bot.send_message(message.from_user.id, text=f'дата datetime = {convert_date}')
 		bot.send_message(message.from_user.id, text=f'внесён расход = {new_entry}')
+		main_menu(message)
 		with open("finances.csv", mode="a", encoding='utf-8') as w_file:
 			file_writer = csv.writer(w_file, lineterminator="\r")
 			file_writer.writerow(new_entry)
@@ -125,7 +129,7 @@ def _date(message, new_entry):
 # 	add_entry(message)
 
 
-@bot.message_handler(commands=['sum'])
+# @bot.message_handler(content_types=['text'])
 def summ_all(message):
 	summ = 0
 	with open("finances.csv", mode="r", encoding='utf-8') as r_file:
@@ -135,7 +139,7 @@ def summ_all(message):
 	bot.send_message(message.from_user.id, text=f'Сумма всех расходов = {summ}')
 
 
-@bot.message_handler(commands=['last'])
+# @bot.message_handler(content_types=['text'])
 def last(message):
 	last = ''
 	i = 0
@@ -149,7 +153,7 @@ def last(message):
 		j = 0
 		for row in file_reader:
 			j += 1
-			if j >= i - 1:
+			if j >= i - 4:  # здесь регулируется кол-во последних записей
 				last += str(row)
 	bot.send_message(message.from_user.id, text=f'{last}')
 
