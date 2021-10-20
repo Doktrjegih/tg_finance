@@ -16,17 +16,31 @@ import calendar
 bot = telebot.TeleBot(f"{mytoken.token}")
 
 
+def date(year, month, day):
+	return str(year), str(month), str(day)
+
+
+def test_back_month(calendar_buttons, now_month):
+
+	return 'nothing'
+
+
 @bot.message_handler(commands=['d'])
 def inline_calendar(message):
-	markup3 = types.InlineKeyboardMarkup(row_width=7)
+	calendar_buttons = types.InlineKeyboardMarkup(row_width=7)
 	now_month = datetime.datetime.now().month
+	month_btn = types.InlineKeyboardButton(f'{now_month}', callback_data='asda')
+	calendar_buttons.row(month_btn)
 	for i in calendar.monthcalendar(2021, now_month):
 		rr = []
 		for j in i:
-			btn = types.InlineKeyboardButton(f'{j}', callback_data='date')
+			btn = types.InlineKeyboardButton(f'{j}', callback_data='asda')
 			rr.append(btn)
-		markup3.row(rr[0], rr[1], rr[2], rr[3], rr[4], rr[5], rr[6])
-	bot.send_message(message.from_user.id, "Дата:", reply_markup=markup3)
+		calendar_buttons.row(rr[0], rr[1], rr[2], rr[3], rr[4], rr[5], rr[6])
+	back_btn = types.InlineKeyboardButton('<', callback_data=test_back_month(calendar_buttons, now_month))
+	forward_btn = types.InlineKeyboardButton('>', callback_data='forward_month')
+	calendar_buttons.row(back_btn, forward_btn)
+	bot.send_message(message.from_user.id, "Выбери дату:", reply_markup=calendar_buttons)
 
 
 @bot.message_handler(commands=['b'])
@@ -86,6 +100,8 @@ def callback_worker(call):
 		bot.delete_message(chat_id=test1, message_id=test2)
 		bot.delete_message(chat_id=test1, message_id=int(test2) + 1)
 		bot.send_message(call.message.chat.id, 'а вот это отлично')
+	if call == 'nothing':
+		print('получилось')
 
 
 def _sum(message, cat):
