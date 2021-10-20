@@ -11,10 +11,22 @@ from telebot import types
 import datetime
 import csv
 import mytoken
-# import telegramcalendar
+import calendar
 
 bot = telebot.TeleBot(f"{mytoken.token}")
-markup = types.ReplyKeyboardMarkup(row_width=1)
+
+
+@bot.message_handler(commands=['d'])
+def inline_calendar(message):
+	markup3 = types.InlineKeyboardMarkup(row_width=7)
+	now_month = datetime.datetime.now().month
+	for i in calendar.monthcalendar(2021, now_month):
+		rr = []
+		for j in i:
+			btn = types.InlineKeyboardButton(f'{j}', callback_data='date')
+			rr.append(btn)
+		markup3.row(rr[0], rr[1], rr[2], rr[3], rr[4], rr[5], rr[6])
+	bot.send_message(message.from_user.id, "Дата:", reply_markup=markup3)
 
 
 @bot.message_handler(commands=['b'])
@@ -42,15 +54,15 @@ def add_entry(message):
 		keyboard.add(keyboard_1)
 		keyboard_2 = types.InlineKeyboardButton(text='тачка', callback_data=f'{test1}+{test2}+test2')
 		keyboard.add(keyboard_2)
-		keyboard_3 = types.InlineKeyboardButton(text='пиво', callback_data='beer')
+		keyboard_3 = types.InlineKeyboardButton(text='пиво', callback_data=f'{test1}+{test2}+beer')
 		keyboard.add(keyboard_3)
 		bot.send_message(message.from_user.id, text='Выберите категорию:', reply_markup=keyboard)
 	elif message.text == 'Сумма всех расходов':
 		summ_all(message)
 	elif message.text == 'Последние 5 записей':
 		last(message)
-	else:
-		print('неизвестная команда')
+	# else:
+	# 	bot.send_message(message.from_user.id, text='Неизвестная команда')
 
 
 @bot.callback_query_handler(func=lambda call: True)
@@ -60,21 +72,17 @@ def callback_worker(call):
 	test2 = call.data.split('+')[1]
 	if command == "test1":
 		bot.delete_message(chat_id=test1, message_id=int(test2) + 2)
-		# bot.delete_message(chat_id=test1, message_id=int(test2) + 1)
-		cat = 'продукты'
-		# markup1 = types.ReplyKeyboardRemove(selective=False)
-		# bot.send_message(call.message.chat.id, 'кнопки удалены', reply_markup=markup1)
-		bot.register_next_step_handler(bot.send_message(call.message.chat.id, 'введи сумму (c для отмены):'),
-									   _sum, cat)
-	if call.data == "test2":
-		bot.delete_message(chat_id=test1, message_id=test2)
 		bot.delete_message(chat_id=test1, message_id=int(test2) + 1)
-		cat = 'тачка'
-		# markup1 = types.ReplyKeyboardRemove(selective=False)
-		# bot.send_message(call.message.chat.id, 'кнопки удалены', reply_markup=markup1)
+		cat = 'продукты'
 		bot.register_next_step_handler(bot.send_message(call.message.chat.id, 'введи сумму (c для отмены):'),
 									   _sum, cat)
-	if call.data == "beer":
+	if command == "test2":
+		bot.delete_message(chat_id=test1, message_id=test2)
+		bot.delete_message(chat_id=test1, message_id=int(test2) + 2)
+		cat = 'тачка'
+		bot.register_next_step_handler(bot.send_message(call.message.chat.id, 'введи сумму (c для отмены):'),
+									   _sum, cat)
+	if command == "beer":
 		bot.delete_message(chat_id=test1, message_id=test2)
 		bot.delete_message(chat_id=test1, message_id=int(test2) + 1)
 		bot.send_message(call.message.chat.id, 'а вот это отлично')
@@ -87,7 +95,6 @@ def _sum(message, cat):
 		bot.delete_message(chat_id=message.chat.id, message_id=message.id - 1)
 		bot.delete_message(chat_id=message.chat.id, message_id=message.id)
 		new_entry = []
-		bot.send_message(message.from_user.id, text=f'сумма = {message.text}')
 		new_entry.append(cat)
 		new_entry.append(message.text)
 		bot.register_next_step_handler(bot.send_message(message.chat.id, 'введи название (c для отмены)'),
@@ -100,7 +107,6 @@ def name(message, new_entry):
 	else:
 		bot.delete_message(chat_id=message.chat.id, message_id=message.id - 1)
 		bot.delete_message(chat_id=message.chat.id, message_id=message.id)
-		bot.send_message(message.from_user.id, text=f'название = {message.text}')
 		new_entry.append(message.text)
 		bot.register_next_step_handler(bot.send_message(message.chat.id, 'выбери дату (c для отмены)'),
 									   _date, new_entry)
@@ -114,22 +120,16 @@ def _date(message, new_entry):
 		bot.delete_message(chat_id=message.chat.id, message_id=message.id - 2)
 		bot.delete_message(chat_id=message.chat.id, message_id=message.id - 1)
 		bot.delete_message(chat_id=message.chat.id, message_id=message.id)
+
 		convert_date = datetime.datetime.strptime(message.text, '%d.%m.%Y').isoformat(sep='T')
 		new_entry.append(convert_date)
-		# bot.send_message(message.from_user.id, text=f'дата datetime = {convert_date}')
-		bot.send_message(message.from_user.id, text=f'внесён расход = {new_entry}')
+		bot.send_message(message.from_user.id, text=f'Внесён расход = {new_entry}')
 		main_menu(message)
 		with open("finances.csv", mode="a", encoding='utf-8') as w_file:
 			file_writer = csv.writer(w_file, lineterminator="\r")
 			file_writer.writerow(new_entry)
 
 
-# @bot.message_handler(commands=['c'])
-# def cancel(message):
-# 	add_entry(message)
-
-
-# @bot.message_handler(content_types=['text'])
 def summ_all(message):
 	summ = 0
 	with open("finances.csv", mode="r", encoding='utf-8') as r_file:
@@ -139,7 +139,6 @@ def summ_all(message):
 	bot.send_message(message.from_user.id, text=f'Сумма всех расходов = {summ}')
 
 
-# @bot.message_handler(content_types=['text'])
 def last(message):
 	last = ''
 	i = 0
