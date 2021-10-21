@@ -14,33 +14,53 @@ import mytoken
 import calendar
 
 bot = telebot.TeleBot(f"{mytoken.token}")
+someshit = 0
+message_id = 0
 
 
 def date(year, month, day):
 	return str(year), str(month), str(day)
 
 
-def test_back_month(calendar_buttons, now_month):
-
+def test_back_month(calendar_buttons, message, now_month):
+	print('сработала эта шляпа')
+	bot.delete_message(message.chat.id, message.id + 1)
+	inline_calendar(now_month - 1)
 	return 'nothing'
 
 
+def sendmessage2(inp):
+	now_month = inp
+	global message_id
+	# bot.edit_message_text(text='Выбери дату:', chat_id=330372014, message_id=message_id, reply_markup=inline_calendar(now_month))
+	bot.send_message(330372014, 'Выбери дату:', reply_markup=inline_calendar(now_month))
+
+
 @bot.message_handler(commands=['d'])
-def inline_calendar(message):
-	calendar_buttons = types.InlineKeyboardMarkup(row_width=7)
+def sendmessage(message):
+	global message_id
+	message_id = message.id
 	now_month = datetime.datetime.now().month
-	month_btn = types.InlineKeyboardButton(f'{now_month}', callback_data='asda')
+	bot.send_message(message.chat.id, 'Выбери дату:', reply_markup=inline_calendar(now_month))
+	print(message.chat.id)
+
+
+def inline_calendar(month):
+	calendar_buttons = types.InlineKeyboardMarkup(row_width=7)
+	month_btn = types.InlineKeyboardButton(f'{month}', callback_data='asda')
 	calendar_buttons.row(month_btn)
-	for i in calendar.monthcalendar(2021, now_month):
+	for i in calendar.monthcalendar(2021, month):
 		rr = []
 		for j in i:
 			btn = types.InlineKeyboardButton(f'{j}', callback_data='asda')
 			rr.append(btn)
 		calendar_buttons.row(rr[0], rr[1], rr[2], rr[3], rr[4], rr[5], rr[6])
-	back_btn = types.InlineKeyboardButton('<', callback_data=test_back_month(calendar_buttons, now_month))
+	back_btn = types.InlineKeyboardButton('<', callback_data='prev')
 	forward_btn = types.InlineKeyboardButton('>', callback_data='forward_month')
 	calendar_buttons.row(back_btn, forward_btn)
-	bot.send_message(message.from_user.id, "Выбери дату:", reply_markup=calendar_buttons)
+	global someshit
+	someshit = month
+	return calendar_buttons
 
 
 @bot.message_handler(commands=['b'])
@@ -81,6 +101,12 @@ def add_entry(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
+	if call.data == 'prev':
+		global someshit
+		someshit -= 1
+		sendmessage2(someshit)
+		print('получилось')
+
 	command = call.data.split('+')[2]
 	test1 = call.data.split('+')[0]
 	test2 = call.data.split('+')[1]
@@ -100,8 +126,6 @@ def callback_worker(call):
 		bot.delete_message(chat_id=test1, message_id=test2)
 		bot.delete_message(chat_id=test1, message_id=int(test2) + 1)
 		bot.send_message(call.message.chat.id, 'а вот это отлично')
-	if call == 'nothing':
-		print('получилось')
 
 
 def _sum(message, cat):
