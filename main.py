@@ -19,6 +19,7 @@ chat_id = 0
 global_month = 0
 global_year = 0
 message_id = 0
+category_message = 0
 
 
 @bot.message_handler(commands=['start'])
@@ -34,13 +35,13 @@ def first_show_calendar(message):
     message_id = message.id + 1
     now_month = datetime.datetime.now().month
     now_year = datetime.datetime.now().year
-    bot.send_message(chat_id, 'Выбери дату:', reply_markup=inline_calendar(now_year, now_month))
+    bot.send_message(chat_id, 'Выберите дату:', reply_markup=inline_calendar(now_year, now_month))
 
 
 def change_calendar(current_year, current_month):
     global message_id
     print('message id =', message_id)
-    bot.edit_message_text(text='Выбери дату:', chat_id=chat_id, message_id=message_id,
+    bot.edit_message_text(text='Выберите дату:', chat_id=chat_id, message_id=message_id,
                           reply_markup=inline_calendar(current_year, current_month))
 
 
@@ -80,68 +81,77 @@ def add_entry(message):
     if message.text == 'Добавить расход':
         markup_delete = types.ReplyKeyboardRemove()
         bot.send_message(chat_id, "=== Добавить расход ===", reply_markup=markup_delete)
-        bot.delete_message(chat_id, message.id - 2)
-        bot.delete_message(chat_id, message.id - 1)
-        bot.delete_message(chat_id, message.id)
+        # bot.delete_message(chat_id, message.id - 2)
+        # bot.delete_message(chat_id, message.id - 1)
+        # bot.delete_message(chat_id, message.id)
         keyboard = types.InlineKeyboardMarkup()
-        keyboard_1 = types.InlineKeyboardButton(text='продукты', callback_data=f'{test1}+{test2}+category_food')
+        keyboard_1 = types.InlineKeyboardButton(text='Продукты', callback_data=f'category_food+{test1}+{test2}')
         keyboard.add(keyboard_1)
-        keyboard_2 = types.InlineKeyboardButton(text='тачка', callback_data=f'{test1}+{test2}+category_car')
+        keyboard_2 = types.InlineKeyboardButton(text='Тачка', callback_data=f'category_car+{test1}+{test2}')
         keyboard.add(keyboard_2)
-        keyboard_3 = types.InlineKeyboardButton(text='пиво', callback_data=f'{test1}+{test2}+beer')
+        keyboard_3 = types.InlineKeyboardButton(text='Пиво', callback_data=f'category_beer+{test1}+{test2}')
         keyboard.add(keyboard_3)
         bot.send_message(chat_id, text='Выберите категорию:', reply_markup=keyboard)
+        global category_message
+        category_message = message.id + 2
     elif message.text == 'Сумма всех расходов':
-        summ_all(message)
+        summ_all()
     elif message.text == 'Последние 5 записей':
-        last(message)
-
-
-# else:
-# 	bot.send_message(message.from_user.id, text='Неизвестная команда')
+        last()
+    else:
+        bot.send_message(message.from_user.id, text='Неизвестная команда')
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
+    command = call.data.split('+')[0]
+
     global global_year, global_month
     if call.data == 'back_month':
-        if global_month <= 1:
-            bot.send_message(chat_id, 'ты долбоёб не?')
+        if global_month == 1:
+            global_year -= 1
+            global_month = 12
+            change_calendar(global_year, global_month)
         else:
             global_month -= 1
             change_calendar(global_year, global_month)
-
     if call.data == 'forward_month':
-        if global_month >= 12:
-            bot.send_message(chat_id, 'ты долбоёб не?')
+        if global_month == 12:
+            global_year += 1
+            global_month = 1
+            change_calendar(global_year, global_month)
         else:
             global_month += 1
             change_calendar(global_year, global_month)
+
     if call.data.split('+')[0] == 'certain_date':
         day = call.data.split('+')[1]
         month = call.data.split('+')[2]
         year = call.data.split('+')[3]
         bot.send_message(chat_id, f'{year, day, month}')
 
-    command = call.data.split('+')[2]
-    test1 = call.data.split('+')[0]
-    test2 = call.data.split('+')[1]
+    # test1 = call.data.split('+')[1]
+    # test2 = call.data.split('+')[2]
+    global category_message
     if command == "category_food":
+        bot.delete_message(chat_id, category_message)
         # bot.delete_message(chat_id=chat_id, message_id=int(test2) + 2)
         # bot.delete_message(chat_id=chat_id, message_id=int(test2) + 1)
-        cat = 'продукты'
-        bot.register_next_step_handler(bot.send_message(chat_id, 'введи сумму (c для отмены):'),
-                                       _sum, cat)
+        cat = 'Продукты'
+        bot.register_next_step_handler(bot.send_message(chat_id, 'Введите сумму (c для отмены):'), _sum, cat)
     if command == "category_car":
+        bot.delete_message(chat_id, category_message)
         # bot.delete_message(chat_id=chat_id, message_id=test2)
         # bot.delete_message(chat_id=chat_id, message_id=int(test2) + 2)
-        cat = 'тачка'
-        bot.register_next_step_handler(bot.send_message(chat_id, 'введи сумму (c для отмены):'),
-                                       _sum, cat)
-    if command == "beer":
+        cat = 'Тачка'
+        bot.register_next_step_handler(bot.send_message(chat_id, 'Введите сумму (c для отмены):'), _sum, cat)
+    if command == "category_beer":
+        bot.delete_message(chat_id, category_message)
         # bot.delete_message(chat_id=chat_id, message_id=test2)
         # bot.delete_message(chat_id=chat_id, message_id=int(test2) + 1)
-        bot.send_message(chat_id, 'а вот это отлично')
+        bot.send_message(chat_id, 'А вот это отлично')
+        cat = 'Пиво'
+        bot.register_next_step_handler(bot.send_message(chat_id, 'Введите сумму (c для отмены):'), _sum, cat)
 
 
 def _sum(message, cat):
@@ -150,10 +160,8 @@ def _sum(message, cat):
     else:
         # bot.delete_message(chat_id=chat_id, message_id=message.id - 1)
         # bot.delete_message(chat_id=chat_id, message_id=message.id)
-        new_entry = []
-        new_entry.append(cat)
-        new_entry.append(message.text)
-        bot.register_next_step_handler(bot.send_message(chat_id, 'введи название (c для отмены)'),
+        new_entry = [cat, message.text]
+        bot.register_next_step_handler(bot.send_message(chat_id, 'Введите название (c для отмены):'),
                                        name, new_entry)
 
 
@@ -164,7 +172,7 @@ def name(message, new_entry):
         # bot.delete_message(chat_id=chat_id, message_id=message.id - 1)
         # bot.delete_message(chat_id=chat_id, message_id=message.id)
         new_entry.append(message.text)
-        bot.register_next_step_handler(bot.send_message(chat_id, 'выбери дату (c для отмены)'),
+        bot.register_next_step_handler(bot.send_message(chat_id, 'Выберите дату (c для отмены):'),
                                        _date, new_entry)
 
 
@@ -186,7 +194,7 @@ def _date(message, new_entry):
             file_writer.writerow(new_entry)
 
 
-def summ_all(message):
+def summ_all():
     summ = 0
     with open("finances.csv", mode="r", encoding='utf-8') as r_file:
         file_reader = csv.reader(r_file, lineterminator="\r")
@@ -195,7 +203,7 @@ def summ_all(message):
     bot.send_message(chat_id, text=f'Сумма всех расходов = {summ}')
 
 
-def last(message):
+def last():
     last = ''
     i = 0
     with open("finances.csv", mode="r", encoding='utf-8') as r_file:
