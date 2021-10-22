@@ -17,6 +17,7 @@ bot = telebot.TeleBot(f"{mytoken.token}")
 # chat_id = mytoken.my_chat_id
 chat_id = 0
 global_month = 0
+global_year = 0
 message_id = 0
 
 
@@ -32,30 +33,32 @@ def first_show_calendar(message):
     global message_id
     message_id = message.id + 1
     now_month = datetime.datetime.now().month
-    bot.send_message(chat_id, 'Выбери дату:', reply_markup=inline_calendar(now_month))
+    now_year = datetime.datetime.now().year
+    bot.send_message(chat_id, 'Выбери дату:', reply_markup=inline_calendar(now_year, now_month))
 
 
-def change_calendar(current_month):
+def change_calendar(current_year, current_month):
     global message_id
     print('message id =', message_id)
     bot.edit_message_text(text='Выбери дату:', chat_id=chat_id, message_id=message_id,
-                          reply_markup=inline_calendar(current_month))
+                          reply_markup=inline_calendar(current_year, current_month))
 
 
-def inline_calendar(month):
+def inline_calendar(year, month):
     calendar_buttons = types.InlineKeyboardMarkup(row_width=7)
     month_btn = types.InlineKeyboardButton(f'{month}', callback_data='asda')
     calendar_buttons.row(month_btn)
-    for i in calendar.monthcalendar(2021, month):
+    for i in calendar.monthcalendar(year, month):
         rr = []
-        for j in i:
-            btn = types.InlineKeyboardButton(f'{j}', callback_data='asda')
+        for day in i:
+            btn = types.InlineKeyboardButton(f'{day}', callback_data=f'certain_date+{day}+{month}+{year}')
             rr.append(btn)
         calendar_buttons.row(rr[0], rr[1], rr[2], rr[3], rr[4], rr[5], rr[6])
     back_btn = types.InlineKeyboardButton('<', callback_data='back_month')
     forward_btn = types.InlineKeyboardButton('>', callback_data='forward_month')
     calendar_buttons.row(back_btn, forward_btn)
-    global global_month
+    global global_year, global_month
+    global_year = year
     global_month = month
     return calendar_buttons
 
@@ -100,20 +103,25 @@ def add_entry(message):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
-    global global_month
+    global global_year, global_month
     if call.data == 'back_month':
         if global_month <= 1:
             bot.send_message(chat_id, 'ты долбоёб не?')
         else:
             global_month -= 1
-            change_calendar(global_month)
+            change_calendar(global_year, global_month)
 
     if call.data == 'forward_month':
         if global_month >= 12:
             bot.send_message(chat_id, 'ты долбоёб не?')
         else:
             global_month += 1
-            change_calendar(global_month)
+            change_calendar(global_year, global_month)
+    if call.data.split('+')[0] == 'certain_date':
+        day = call.data.split('+')[1]
+        month = call.data.split('+')[2]
+        year = call.data.split('+')[3]
+        bot.send_message(chat_id, f'{year, day, month}')
 
     command = call.data.split('+')[2]
     test1 = call.data.split('+')[0]
