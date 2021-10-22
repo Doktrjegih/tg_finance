@@ -30,8 +30,7 @@ def start_bot(message):
     main_menu()
 
 
-@bot.message_handler(commands=['d'])
-def first_show_calendar(message):
+def show_calendar(message):
     global message_id
     message_id = message.id + 1
     now_month = datetime.datetime.now().month
@@ -158,7 +157,7 @@ def name(message):
     else:
         global new_entry
         new_entry.append(message.text)
-        first_show_calendar(message)
+        show_calendar(message)
 
 
 def summ_all():
