@@ -41,7 +41,6 @@ def first_show_calendar(message):
 
 def change_calendar(current_year, current_month):
     global message_id
-    print('message id =', message_id)
     bot.edit_message_text(text='Выберите дату:', chat_id=chat_id, message_id=message_id,
                           reply_markup=inline_calendar(current_year, current_month))
 
@@ -125,7 +124,7 @@ def callback_worker(call):
         day = call.data.split('+')[1]
         month = call.data.split('+')[2]
         year = call.data.split('+')[3]
-        convert_date = datetime.datetime.strptime(f'{day}.{month}.{year}', '%d.%m.%Y').isoformat(sep='T')
+        convert_date = f'{day}.{month}.{year}'
         new_entry.append(convert_date)
         bot.send_message(chat_id, text=f'Внесён расход = {new_entry}')
         with open("finances.csv", mode="a", encoding='utf-8') as w_file:
@@ -185,7 +184,7 @@ def last():
         for row in file_reader:
             j += 1
             if j >= i - 4:  # здесь регулируется кол-во последних записей
-                last += str(row)
+                last += str(row) + '\n'
     bot.send_message(chat_id, text=f'{last}')
 
 
