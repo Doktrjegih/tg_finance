@@ -3,7 +3,7 @@
 [+] бот вписывает расход в нужное место пока хватит
 [+] последние 10 ваших расходов, сумма всех внесенных расходов
 [+] кнопки в нижней клавиатуре работают или очищаются инлайновые (сделал очистку, кнопки внизу командные)
-[-] календарь кнопками
+[+] календарь кнопками
 """
 
 import telebot
@@ -18,8 +18,9 @@ bot = telebot.TeleBot(f"{mytoken.token}")
 chat_id = 0
 global_month = 0
 global_year = 0
-message_id = 0
+calendar_message_id = 0
 category_message = 0
+new_entry = []
 
 
 @bot.message_handler(commands=['start'])
@@ -125,10 +126,19 @@ def callback_worker(call):
             change_calendar(global_year, global_month)
 
     if call.data.split('+')[0] == 'certain_date':
+        global new_entry
         day = call.data.split('+')[1]
         month = call.data.split('+')[2]
         year = call.data.split('+')[3]
-        bot.send_message(chat_id, f'{year, day, month}')
+        # bot.send_message(chat_id, f'{day}.{month}.{year}')
+        convert_date = datetime.datetime.strptime(f'{day}.{month}.{year}', '%d.%m.%Y').isoformat(sep='T')
+        new_entry.append(convert_date)
+        bot.send_message(chat_id, text=f'Внесён расход = {new_entry}')
+        with open("finances.csv", mode="a", encoding='utf-8') as w_file:
+            file_writer = csv.writer(w_file, lineterminator="\r")
+            file_writer.writerow(new_entry)
+        new_entry = []
+        main_menu()
 
     # test1 = call.data.split('+')[1]
     # test2 = call.data.split('+')[2]
@@ -160,20 +170,23 @@ def _sum(message, cat):
     else:
         # bot.delete_message(chat_id=chat_id, message_id=message.id - 1)
         # bot.delete_message(chat_id=chat_id, message_id=message.id)
+        global new_entry
         new_entry = [cat, message.text]
         bot.register_next_step_handler(bot.send_message(chat_id, 'Введите название (c для отмены):'),
-                                       name, new_entry)
+                                       name)
 
 
-def name(message, new_entry):
+def name(message):
     if message.text.lower() == 'c' or message.text.lower() == 'с':
         main_menu(message)
     else:
+        global new_entry
         # bot.delete_message(chat_id=chat_id, message_id=message.id - 1)
         # bot.delete_message(chat_id=chat_id, message_id=message.id)
         new_entry.append(message.text)
-        bot.register_next_step_handler(bot.send_message(chat_id, 'Выберите дату (c для отмены):'),
-                                       _date, new_entry)
+        # bot.register_next_step_handler(bot.send_message(chat_id, 'Выберите дату (c для отмены):'),
+        #                                _date, new_entry)
+        first_show_calendar(message)
 
 
 def _date(message, new_entry):
