@@ -23,46 +23,16 @@ category_message = 0
 new_entry = []
 
 
+# запуск бота
 @bot.message_handler(commands=['start'])
 def start_bot(message):
     global chat_id
     chat_id = message.chat.id
+    print('сейчас используется этот чат', chat_id)
     main_menu()
 
 
-def show_calendar(message):
-    global message_id
-    message_id = message.id + 1
-    now_month = datetime.datetime.now().month
-    now_year = datetime.datetime.now().year
-    bot.send_message(chat_id, 'Выберите дату:', reply_markup=inline_calendar(now_year, now_month))
-
-
-def change_calendar(current_year, current_month):
-    global message_id
-    bot.edit_message_text(text='Выберите дату:', chat_id=chat_id, message_id=message_id,
-                          reply_markup=inline_calendar(current_year, current_month))
-
-
-def inline_calendar(year, month):
-    calendar_buttons = types.InlineKeyboardMarkup(row_width=7)
-    month_btn = types.InlineKeyboardButton(f'{month}', callback_data='asda')
-    calendar_buttons.row(month_btn)
-    for i in calendar.monthcalendar(year, month):
-        rr = []
-        for day in i:
-            btn = types.InlineKeyboardButton(f'{day}', callback_data=f'certain_date+{day}+{month}+{year}')
-            rr.append(btn)
-        calendar_buttons.row(rr[0], rr[1], rr[2], rr[3], rr[4], rr[5], rr[6])
-    back_btn = types.InlineKeyboardButton('<', callback_data='back_month')
-    forward_btn = types.InlineKeyboardButton('>', callback_data='forward_month')
-    calendar_buttons.row(back_btn, forward_btn)
-    global global_year, global_month
-    global_year = year
-    global_month = month
-    return calendar_buttons
-
-
+# главное меню
 @bot.message_handler(commands=['b'])
 def main_menu(*args):
     markup = types.ReplyKeyboardMarkup(row_width=1)
@@ -73,6 +43,7 @@ def main_menu(*args):
     bot.send_message(chat_id, "Выберите действие:", reply_markup=markup)
 
 
+# обработчик текстовых команд (меню)
 @bot.message_handler(content_types=['text'])
 def add_entry(message):
     if message.text == 'Добавить расход':
@@ -96,10 +67,12 @@ def add_entry(message):
         bot.send_message(message.from_user.id, text='Неизвестная команда')
 
 
+# callback обработчик
 @bot.callback_query_handler(func=lambda call: True)
 def callback_worker(call):
     command = call.data.split('+')[0]
 
+    # переключение между месяцами календаря
     global global_year, global_month
     if call.data == 'back_month':
         if global_month == 1:
@@ -118,6 +91,7 @@ def callback_worker(call):
             global_month += 1
             change_calendar(global_year, global_month)
 
+    # передача конкретной даты и запись расхода в файл
     if call.data.split('+')[0] == 'certain_date':
         global new_entry
         day = call.data.split('+')[1]
@@ -132,6 +106,7 @@ def callback_worker(call):
         new_entry = []
         main_menu()
 
+    # ожидание выбора категории и запрос суммы расхода
     global category_message
     if command == "category":
         cat = call.data.split('+')[1]
@@ -141,6 +116,7 @@ def callback_worker(call):
         bot.register_next_step_handler(bot.send_message(chat_id, 'Введите сумму (c для отмены):'), _sum, cat)
 
 
+# ожидание ввода суммы расхода и запрос названия
 def _sum(message, cat):
     if message.text.lower() == 'c' or message.text.lower() == 'с':
         main_menu(message)
@@ -151,6 +127,7 @@ def _sum(message, cat):
                                        name)
 
 
+# ожидание ввода названия расхода и вызов календаря
 def name(message):
     if message.text.lower() == 'c' or message.text.lower() == 'с':
         main_menu(message)
@@ -160,6 +137,43 @@ def name(message):
         show_calendar(message)
 
 
+# показ календаря на текущий месяц
+def show_calendar(message):
+    global message_id
+    message_id = message.id + 1
+    now_month = datetime.datetime.now().month
+    now_year = datetime.datetime.now().year
+    bot.send_message(chat_id, 'Выберите дату:', reply_markup=inline_calendar(now_year, now_month))
+
+
+# отрисовка календаря на указанный месяц и год
+def inline_calendar(year, month):
+    calendar_buttons = types.InlineKeyboardMarkup(row_width=7)
+    month_btn = types.InlineKeyboardButton(f'{month}', callback_data='asda')
+    calendar_buttons.row(month_btn)
+    for i in calendar.monthcalendar(year, month):
+        rr = []
+        for day in i:
+            btn = types.InlineKeyboardButton(f'{day}', callback_data=f'certain_date+{day}+{month}+{year}')
+            rr.append(btn)
+        calendar_buttons.row(rr[0], rr[1], rr[2], rr[3], rr[4], rr[5], rr[6])
+    back_btn = types.InlineKeyboardButton('<', callback_data='back_month')
+    forward_btn = types.InlineKeyboardButton('>', callback_data='forward_month')
+    calendar_buttons.row(back_btn, forward_btn)
+    global global_year, global_month
+    global_year = year
+    global_month = month
+    return calendar_buttons
+
+
+# смена месяца на календаре
+def change_calendar(current_year, current_month):
+    global message_id
+    bot.edit_message_text(text='Выберите дату:', chat_id=chat_id, message_id=message_id,
+                          reply_markup=inline_calendar(current_year, current_month))
+
+
+# сумма всех расходов
 def summ_all():
     summ = 0
     with open("finances.csv", mode="r", encoding='utf-8') as r_file:
@@ -169,6 +183,7 @@ def summ_all():
     bot.send_message(chat_id, text=f'Сумма всех расходов = {summ}')
 
 
+# последние 5 расходов
 def last():
     last = ''
     i = 0
